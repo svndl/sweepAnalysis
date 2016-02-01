@@ -11,14 +11,17 @@ function [figNum,plotNum,threshInfo] = plotSweepPD(plotType,pdDataMatrix,dataHdr
 % INPUTS:
 %       plotTypes: 'Ampl' (amplitude in muV) or 'SNR' for Snr (no errorbars)
 %       plotOpt: structure holding options for plots (e.g., colors). Fields and defaults are
-%           plotOpt.dataColor = 'k';
+%           plotOpt.dataColor = 'k' --> color of data points of plot
+%           plotOpt.bins2plot = 1:length(binLevels); 
+%               --> vector of indexes of bins to plot (default is all bins)
 %
 % This function is only meant to be called once for a particular sweep. The
 % logic is that you create a figure and then call this function each time
 % you want to plot another sweep (i.e. from a different group or a
 % different condition)
 
-
+% find index of each field saved in data Matrix
+% (i.e., what does each column in dataMatrix correspond to?)
 for k = 1:length(dataHdr)
     switch dataHdr{k}
         case 'iTrial'
@@ -55,10 +58,20 @@ end
 % set all plot options to default if none specified
 if nargin < 8 || isempty(plotOpt)
     plotOpt.dataColor = 'k';
+    plotOpt.bins2plot = 1:length(binLevels);
 end
 
 % set any missing plot options to default
 if ~isfield(plotOpt,'dataColor'); plotOpt.dataColor='k'; end
+if ~isfield(plotOpt,'bins2plot'); plotOpt.bins2plot=1:length(binLevels); end 
+
+% check that indices in plotOpt.bins2plot doesn't exceed dimensions of
+% binLevels
+if max(plotOpt.bins2plot)>length(binLevels);
+    disp(['The number of bins in binLevels is ' num2str(length(binLevels))])
+    disp(['You have asked to plot the ' num2str(max(plotOpt.bins2plot)) 'th bin.'])
+    error('Please make the indices in plotOpt.bins2plot no greater than the number of bins in binLevels.')
+end
 
 hexagArrag = false;
 if nargin < 9 || isempty(figHandles)
@@ -91,7 +104,8 @@ else
     mrkrSz = 14;
 end
 
-nBins = max(pdDataMatrix(:,binIx));
+% number of bins = number of bins specified by user 
+nBins = length(plotOpt.bins2plot); % max(pdDataMatrix(:,binIx)); % previous implementation for finding number of bins
 
 threshFitted = 0;
 threshVal = nan;
@@ -99,6 +113,7 @@ slopeVal = nan;
 fitBinRange = nan(1,2);
 
 % Get the mean trial data only (as computed by PowerDiva):
+% note: gets mean trial data for ALL bins, not just plotOpt.bins2plot bins
 meanTrialRows = pdDataMatrix(:,trialIx) == 0 & pdDataMatrix(:,binIx) ~= 0 & pdDataMatrix(:,freqIx) == freqNum;
 meanTrialMat = pdDataMatrix(meanTrialRows,:);
 
@@ -106,8 +121,9 @@ switch plotType
     case 'Ampl'
         indexToPlot = amplIx;
         % Get the error estimates for confidence intervals on the means
-        amplErrorRange = nan(2,nBins);
-        for binNum = 1:nBins
+        % (for ALL bins, not just bins in plotOpt.bins2plot)
+        amplErrorRange = nan(2,max(pdDataMatrix(:,binIx)));
+        for binNum = 1:max(pdDataMatrix(:,binIx));
             
             xyData = getXyData(pdDataMatrix,dataHdr,binNum,freqNum);            
             try
@@ -122,11 +138,12 @@ switch plotType
 end
 
 % Compute threshold & slope (and associated variables) if desired:
+% note: only uses bins specified by user
 if plotThreshFit && strcmp(plotType,'Ampl')
     clear sweepMatSubjects;
     sweepMatSubjects = constructSweepMatSubjects(pdDataMatrix,dataHdr,freqNum);
     
-    [threshVal,threshStdErr,slopeVal,slopeStdErr,tLSB,tRSB,~,saveY,saveXX] = getThreshScoringOutput(sweepMatSubjects, binLevels);
+    [threshVal,threshStdErr,slopeVal,slopeStdErr,tLSB,tRSB,~,saveY,saveXX] = getThreshScoringOutput(sweepMatSubjects, binLevels(plotOpt.bins2plot));
     fitBinRange = [tLSB,tRSB];
     if isnan(threshVal)
         fprintf('No scoring function could be fitted.\n');
@@ -160,16 +177,24 @@ figure(figNum);
 % Plot mean data (filled circles):
 if isLogSpaced(binLevels)
     hold on;
-    plotNum = semilogx(binLevels,meanTrialMat(:,indexToPlot),'ko-','Color',plotOpt.dataColor,'MarkerFaceColor',plotOpt.dataColor,'LineWidth',2);   
+    plotNum = semilogx(binLevels(plotOpt.bins2plot),...
+        meanTrialMat(plotOpt.bins2plot,indexToPlot),'ko-','Color',...
+        plotOpt.dataColor,'MarkerFaceColor',plotOpt.dataColor,'LineWidth',2);   
     if strcmp(plotType,'Ampl')
         % with noise estimates (empty squares)
-        semilogx(binLevels,meanTrialMat(:,noiseIx),'ks','Color',plotOpt.dataColor,'MarkerSize',mrkrSz);
+        semilogx(binLevels(plotOpt.bins2plot),...
+            meanTrialMat(plotOpt.bins2plot,noiseIx),'ks','Color',...
+            plotOpt.dataColor,'MarkerSize',mrkrSz);
     end
 else
     hold on;
-    plotNum = plot(binLevels,meanTrialMat(:,indexToPlot),'ko-','Color',plotOpt.dataColor,'MarkerFaceColor',plotOpt.dataColor,'LineWidth',2);
+    plotNum = plot(binLevels(plotOpt.bins2plot),...
+        meanTrialMat(plotOpt.bins2plot,indexToPlot),'ko-','Color',...
+        plotOpt.dataColor,'MarkerFaceColor',plotOpt.dataColor,'LineWidth',2);
     if strcmp(plotType,'Ampl')
-        plot(binLevels,meanTrialMat(:,noiseIx),'ks','Color',plotOpt.dataColor,'MarkerSize',mrkrSz);
+        plot(binLevels(plotOpt.bins2plot),...
+            meanTrialMat(plotOpt.bins2plot,noiseIx),'ks','Color',...
+            plotOpt.dataColor,'MarkerSize',mrkrSz);
     end
 end
 
@@ -177,9 +202,11 @@ end
 if strcmp(plotType,'Ampl')
     % don't use built-in Matlab errorbar function because it makes ugly 
     % "tees," the horizontal lines on top & bottom
-    for binNum = 1:nBins
+    for binNum = plotOpt.bins2plot;
         try
-            plot([binLevels(binNum) binLevels(binNum)],[amplErrorRange(1,binNum) amplErrorRange(2,binNum)],'k-','Color',plotOpt.dataColor,'LineWidth',2);
+            plot([binLevels(binNum) binLevels(binNum)],...
+                [amplErrorRange(1,binNum) amplErrorRange(2,binNum)],...
+                'k-','Color',plotOpt.dataColor,'LineWidth',2);
         catch            
             fprintf('Error bars could not be plotted on your data, probably your data do not contain >1 sample.');
         end
@@ -212,7 +239,7 @@ if plotThreshFit && threshFitted
 end
 
 % Make some final plot settings:
-set(gca,'XTick',binLevels([1 floor(length(binLevels)/2) end]))
+set(gca,'XTick',binLevels([plotOpt.bins2plot(1) floor(nBins/2) plotOpt.bins2plot(end)]))
 if ~hexagArrag
     xlabel('Bin Values')
     set(gca,'ticklength',1.5*get(gca,'ticklength'))
