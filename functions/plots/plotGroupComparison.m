@@ -101,22 +101,24 @@ function selectedArr = userQuery(listOfValues)
     else
         number = 0;
     end
-    msg = 'Enter the index into this array of values: [';
-    for i = 1:length(listOfValues)-1
+    msg = 'Enter the index into this array of values: [ ';
+    for i = 1:length(listOfValues)
         if number == 1
             currVal = num2str(listOfValues(i));
         else
             currVal = listOfValues{i};
         end
         msg = [msg, currVal];
-        msg = [msg, ', '];
+        msg = [msg, ' '];
     end
-    if number == 1
-        currVal = num2str(listOfValues(i+1));
-    else
-        currVal = listOfValues{i+1};
-    end
-    msg = [msg, currVal];
+%     if length(listOfValues) > 1
+%         if number == 1
+%             currVal = num2str(listOfValues(i+1));
+%         else
+%             currVal = listOfValues{i+1};
+%         end
+%     end
+%     msg = [msg, currVal];
     msg = [msg, '], separated by spaces: '];
     fprintf(msg);
     selected = input('', 's');
