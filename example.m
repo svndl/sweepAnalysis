@@ -236,6 +236,6 @@ newmap('PO8-Cz') = 25;
 % First example:
 % plotGroupComparison({dataDir1, dataDir2}, {'CVI_NT', 'CVI'}, [], {'Cond1', 'Cond2', 'Cond3', 'Cond4', 'Cond5'}, 'RLS', newmap);
 % Second example:
-plotGroupComparison({dataDir2, dataDir1}, {'CVI', 'CVI_NT'}, [2,4], {'Cond1', 'Cond2', 'Cond3', 'Cond4', 'Cond5'}, 'RLS', newmap);
+% plotGroupComparison({dataDir2, dataDir1}, {'CVI', 'CVI_NT'}, [2,4], {'Cond1', 'Cond2', 'Cond3', 'Cond4', 'Cond5'}, 'RLS', newmap);
 
-% plotGroupComparison({dataDir, dataDir}, {'Group1', 'Group2'}, [71 76 70 75 83 74 82], {'HorSwp' 'VerSwp' 'HorCorr' 'VerCorr'}, 'RLS');
+plotGroupComparison({dataDir, dataDir}, {'Group1', 'Group2'}, [71 76 70 75 83 74 82], {'HorSwp' 'VerSwp' 'HorCorr' 'VerCorr'}, 'RLS');
