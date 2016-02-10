@@ -105,7 +105,7 @@ else
 end
 
 % number of bins = number of bins specified by user 
-nBins = length(plotOpt.bins2plot); % max(pdDataMatrix(:,binIx)); % previous implementation for finding number of bins
+nBins = length(plotOpt.bins2plot); 
 
 threshFitted = 0;
 threshVal = nan;
