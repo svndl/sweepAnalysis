@@ -1,5 +1,7 @@
-function plotGroupComparison(dataDirs, groupNames, channels, condDesc, sweepEstType, newChanMap)
+function plotGroupComparison(dataDirs, groupNames, channels, condDesc, user, idxInput, sweepEstType, newChanMap, newfig)
 % plotGroupComparison(dataDirs, groupNames, channels, condDesc, sweepEstType)
+%
+% Variables in square brackets,[var], indicate that they are optional.
 %
 % dataDirs       : Cell array of group data file directories
 % groupNames     : Descriptive names of the groups being compared. The
@@ -8,19 +10,51 @@ function plotGroupComparison(dataDirs, groupNames, channels, condDesc, sweepEstT
 % channels       : Vector of channel numbers
 % condDesc       : Cell array of condition description. Must be consistent
 %                  with the array of condition numbers.
+% [user]         : Set to 1 if want to generate a single plot. Set to 0 if
+%                  want to generate plot with multiple subplots. If not
+%                  specified, default is 1 (user input required).
+% [idxInput]     : Set to the indicies of the channels, conditions, plot
+%                  type, and frequencies wanted for the multi group 
+%                  comparison plot.
 % [sweepEstType] : 'RLS' or 'DFT'. If not specified, default is 'RLS'
 % [newChanMap]   : Map that maps channel names to numbers
+% [newfig]       : Tells us if we want a new figure to be created in
+%                  plotSweepPD.m. Set to 1 if new figure wanted. Else, 0.
 %
 % This function assumes you only want to plot one channel, one frequency,
 % one condition per group.
 
-    if (nargin < 5) || (isempty(sweepEstType))
+    if (nargin < 5) || (isempty(user))
+        user = 1;
+        fprintf('User input required.\n');
+    end
+
+    if (nargin < 6) || (isempty(idxInput))
+        idxInput = [];
+        fprintf('User input required.\n');
+    end
+    
+    if (nargin < 7) || (isempty(sweepEstType))
         sweepEstType = 'RLS';
         fprintf('No data type specified. Default (RLS) is assumed.\n');
     end
 
-    if (nargin < 6) || (isempty(newChanMap))
+    if (nargin < 8) || (isempty(newChanMap))
         newChanMap = containers.Map;
+    end
+    
+    if (nargin < 9) || (isempty(newfig))
+        newfig = 1;
+    end
+    
+    % If there is no user input, we need the number if indices to be 4 to
+    % match (in this specific order):
+    %   1 - Channel index
+    %   2 - Condition index
+    %   3 - Plot type index
+    %   4 - Frequency index
+    if ~(isempty(idxInput))
+        assert(length(idxInput) == 4);
     end
     
     % Get number of groups we are comparing
@@ -43,41 +77,58 @@ function plotGroupComparison(dataDirs, groupNames, channels, condDesc, sweepEstT
             % Can do this because channels same for all structs in pd data.
             channels = [channels currPdData(1,n).channel];
         end
-        fprintf('Select channel:\n');
-        selectedChan = userQuery(channels);
-        while length(selectedChan) ~= 1
-            fprintf('Select only one channel.\n');
+        if user == 1
+            fprintf('Select channel:\n');
             selectedChan = userQuery(channels);
+            while length(selectedChan) ~= 1
+                fprintf('Select only one channel.\n');
+                selectedChan = userQuery(channels);
+            end
+            selectedChan = selectedChan(1); % Can do this since length == 1
+        else
+            selectedChan = idxInput(1);
         end
-        selectedChan = selectedChan(1); % Can do this since length == 1
         
         % Get condition to compare
-        fprintf('Select condition:\n');
-        selectedCond = userQuery(condDesc);
-        while length(selectedCond) ~= 1
-            fprintf('Select only one condition.\n');
+        if user == 1
+            fprintf('Select condition:\n');
             selectedCond = userQuery(condDesc);
+            while length(selectedCond) ~= 1
+                fprintf('Select only one condition.\n');
+                selectedCond = userQuery(condDesc);
+            end
+            selectedCond = selectedCond(1); % Can do this since length == 1
+        else
+            selectedCond = idxInput(2);
         end
-        selectedCond = selectedCond(1); % Can do this since length == 1
         
         % Get plot type
-        fprintf('Select plot type:\n');
         plotType = {'Ampl', 'SNR'};
-        selectedPlot = userQuery(plotType);
-        while length(selectedPlot) ~= 1
-            fprintf('Select only one plot type.\n');
-            selectedPlot = userQuery(selectedPlot);
+        if user == 1
+            fprintf('Select plot type:\n');
+            selectedPlot = userQuery(plotType);
+            while length(selectedPlot) ~= 1
+                fprintf('Select only one plot type.\n');
+                selectedPlot = userQuery(selectedPlot);
+            end
+            selectedPlot = plotType{selectedPlot(1)}; % Can do this since length == 1
+        else
+            selectedPlot = plotType{idxInput(3)};
         end
-        selectedPlot = plotType{selectedPlot(1)}; % Can do this since length == 1
         
         % Get frequency to look at
-        fprintf('Select frequency:\n');
-        selectedFreq = userQuery(currPdData(selectedCond,selectedChan).freqsAnalyzed);
-        while length(selectedFreq) ~= 1
-            fprintf('Select only one frequency.\n');
-            selectedFreq = userQuery(currPdData(selectedCond,selectedChan).freqsAnalyzed);
+        frequencies = currPdData(selectedCond,selectedChan).freqsAnalyzed;
+        if user == 1
+            fprintf('Select frequency:\n');
+            selectedFreq = userQuery(frequencies);
+            while length(selectedFreq) ~= 1
+                fprintf('Select only one frequency.\n');
+                selectedFreq = userQuery(currPdData(selectedCond,selectedChan).freqsAnalyzed);
+            end
+            selectedFreq = selectedFreq(1);
+        else
+            selectedFreq = idxInput(4);
         end
-        selectedFreq = selectedFreq(1);
         
         % We are plotting each group (no longer each condition, like in the
         % example.m code)
@@ -85,7 +136,8 @@ function plotGroupComparison(dataDirs, groupNames, channels, condDesc, sweepEstT
         [figNum, plotNum(i)] = plotSweepPD(selectedPlot, currPdData(selectedCond, selectedChan).dataMatrix, ...
                                                          currPdData(selectedCond, selectedChan).hdrFields,  ...
                                                          currPdData(selectedCond, selectedChan).binLevels,  ...
-                                                         selectedFreq, 'SEM', plotThresholdFits, plotOpt, figNum );
+                                                         selectedFreq, 'SEM', plotThresholdFits, plotOpt, ...
+                                                         figNum, newfig);
         % Reset channels because they get modified each loop
         channels = oldChannels;
     end
@@ -111,14 +163,6 @@ function selectedArr = userQuery(listOfValues)
         msg = [msg, currVal];
         msg = [msg, ' '];
     end
-%     if length(listOfValues) > 1
-%         if number == 1
-%             currVal = num2str(listOfValues(i+1));
-%         else
-%             currVal = listOfValues{i+1};
-%         end
-%     end
-%     msg = [msg, currVal];
     msg = [msg, '], separated by spaces: '];
     fprintf(msg);
     selected = input('', 's');
