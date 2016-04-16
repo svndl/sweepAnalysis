@@ -1,4 +1,4 @@
-function [figNum,plotNum,threshInfo] = plotSweepPD(plotType,pdDataMatrix,dataHdr,binLevels,freqNum,errType,plotThreshFit,plotOpt,figHandles)
+function [figNum,plotNum,threshInfo] = plotSweepPD(plotType,pdDataMatrix,dataHdr,binLevels,freqNum,errType,plotThreshFit,plotOpt,figHandles,newfig)
 
 % function [figNum,plotNum,threshInfo] = plotSweepPD(plotType,pdDataMatrix,dataHdr,binLevels,freqNum,errType,plotThreshFit,plotOpt,figHandles)
 %   
@@ -61,6 +61,11 @@ if nargin < 8 || isempty(plotOpt)
     plotOpt.bins2plot = 1:length(binLevels);
 end
 
+% This is an override so that multiPlotGroupComparison.m can plot subplots
+if isempty(newfig)
+    newfig = 1;
+end
+
 % set any missing plot options to default
 if ~isfield(plotOpt,'dataColor'); plotOpt.dataColor='k'; end
 if ~isfield(plotOpt,'bins2plot'); plotOpt.bins2plot=1:length(binLevels); end 
@@ -75,9 +80,11 @@ end
 
 hexagArrag = false;
 if nargin < 9 || isempty(figHandles)
-    figure;
-    set(gcf,'Color','w');
-    set(gca,'FontSize',20);
+    if newfig == 1
+        figure;
+        set(gcf,'Color','w');
+        set(gca,'FontSize',20);
+    end
     figInfo = gcf;
     if ~isnumeric(figInfo)
         figNum = figInfo.Number;        
