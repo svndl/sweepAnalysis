@@ -206,8 +206,11 @@ example_segPdData = makeDataStructure(dataDir, [1, 2], 'RLS', 'Example Exp', [],
 dataDir = 'exampleData/PowerDivaProProject_Exp_TEXT_HCN_128_Avg/';
 
 % Set these data directories as desired
-dataDir1 = '';
-dataDir2 = '';
+% dataDir1 = '/Users/Nathan/Desktop/Research/CVIdata/CVI_NT_20150407_1127/Exp_TEXT_PD1010_5_Cz/';
+% dataDir2 = '/Users/Nathan/Desktop/Research/CVIdata/CVI3top34_20160224_1020/Exp_TEXT_PD1010_5_Cz';
+
+% dataDir1 = '/Users/Nathan/Desktop/Research/AEdata/AE30MNM_20140207_1028/Exp_TEXT_HCN_128_Avg';
+% dataDir2 = '/Users/Nathan/Desktop/Research/AEdata/16AgematchedC_20140603_1101/Exp_TEXT_HCN_128_Avg';
 
 % So that user knows what channels are in the data file
 % Typically user would not have to incorporate this code into their scripts
@@ -233,9 +236,19 @@ newmap('PO8-Cz') = 25;
 % if you know that the data file uses a different channel naming 
 % convention, as shown in the first plotGroupComparison example below.
 
-% First example:
-% plotGroupComparison({dataDir1, dataDir2}, {'CVI_NT', 'CVI'}, [], {'Cond1', 'Cond2', 'Cond3', 'Cond4', 'Cond5'}, 'RLS', newmap);
-% Second example:
-plotGroupComparison({dataDir2, dataDir1}, {'CVI', 'CVI_NT'}, [2,4], {'Cond1', 'Cond2', 'Cond3', 'Cond4', 'Cond5'}, 'RLS', newmap);
+channels = [71 76 70 75 83 74 82];
 
-% plotGroupComparison({dataDir, dataDir}, {'Group1', 'Group2'}, [71 76 70 75 83 74 82], {'HorSwp' 'VerSwp' 'HorCorr' 'VerCorr'}, 'RLS');
+% First example:
+% plotGroupComparison({dataDir1, dataDir2}, {'CVI_NT', 'CVI'}, [], {'Cond1', 'Cond2', 'Cond3', 'Cond4', 'Cond5'}, 1, [], 'RLS', newmap);
+% Second example:
+% plotGroupComparison({dataDir2, dataDir1}, {'CVI', 'CVI_NT'}, [], {'Cond1', 'Cond2', 'Cond3', 'Cond4', 'Cond5'}, 1, [], 'RLS', newmap);
+
+plotGroupComparison({dataDir, dataDir}, {'Group1', 'Group2'}, [71 76 70 75 83 74 82], {'HorSwp' 'VerSwp' 'HorCorr' 'VerCorr'}, 1, [], 'RLS');
+
+%% Third example:
+channels = [71 76 70 75 83 74 82];
+dataDir3 = '/Users/Nathan/Desktop/AE Data/AEProject/Exp_TEXT_HCN_128_Avg';
+dataDir4 = '/Users/Nathan/Desktop/AE Data/Typical_Project/Exp_TEXT_HCN_128_Avg';
+plotGroupComparison({dataDir3, dataDir4}, {'AE', 'NT'}, channels, {'Cond1', 'Cond2', 'Cond3'}, 1, [], 'RLS');
+
+
