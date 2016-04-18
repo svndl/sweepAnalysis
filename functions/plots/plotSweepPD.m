@@ -62,7 +62,7 @@ if nargin < 8 || isempty(plotOpt)
 end
 
 % This is an override so that multiPlotGroupComparison.m can plot subplots
-if isempty(newfig)
+if nargin < 10 || isempty(newfig)
     newfig = 1;
 end
 
