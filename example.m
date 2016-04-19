@@ -247,8 +247,7 @@ plotGroupComparison({dataDir, dataDir}, {'Group1', 'Group2'}, [71 76 70 75 83 74
 
 %% Third example:
 channels = [71 76 70 75 83 74 82];
-dataDir3 = '/Users/Nathan/Desktop/Research/AE Data/AEProject/Exp_TEXT_HCN_128_Avg';
-dataDir4 = '/Users/Nathan/Desktop/Research/AE Data/Typical_Project/Exp_TEXT_HCN_128_Avg';
+dataDir3 = '/Users/Nathan/Desktop/AE Data/AEProject/Exp_TEXT_HCN_128_Avg';
+dataDir4 = '/Users/Nathan/Desktop/AE Data/Typical_Project/Exp_TEXT_HCN_128_Avg';
 plotGroupComparison({dataDir3, dataDir4}, {'AE', 'NT'}, channels, {'Cond1', 'Cond2', 'Cond3'}, 1, [], 'RLS');
-
 
