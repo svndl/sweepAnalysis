@@ -22,7 +22,7 @@ conditionColors = [1 0 0; 0 0 1; 0 1 0; 1 0 1; 0 1 1; 0 0 0]; % specify RGB trip
 % Example) Plot Conditions 1 & 2 for electrode 76 & the 1st frequency component:
 freqIxToPlot = 1;
 chanIxToPlot = 1; % channels(2) = 76;
-condsToPlot = 1:2;
+condsToPlot = 3;
 
 plotThresholdFits = true; % set to false if not desired
 
@@ -241,7 +241,6 @@ channels = [71 76 70 75 83 74 82];
 % First example:
 % plotGroupComparison({dataDir1, dataDir2}, {'CVI_NT', 'CVI'}, [], {'Cond1', 'Cond2', 'Cond3', 'Cond4', 'Cond5'}, 1, [], 'RLS', newmap);
 % Second example:
-% plotGroupComparison({dataDir2, dataDir1}, {'CVI', 'CVI_NT'}, [2,4], {'Cond1', 'Cond2', 'Cond3', 'Cond4', 'Cond5'}, 'RLS', newmap);
 % plotGroupComparison({dataDir2, dataDir1}, {'CVI', 'CVI_NT'}, [], {'Cond1', 'Cond2', 'Cond3', 'Cond4', 'Cond5'}, 1, [], 'RLS', newmap);
 
 plotGroupComparison({dataDir, dataDir}, {'Group1', 'Group2'}, [71 76 70 75 83 74 82], {'HorSwp' 'VerSwp' 'HorCorr' 'VerCorr'}, 1, [], 'RLS');
