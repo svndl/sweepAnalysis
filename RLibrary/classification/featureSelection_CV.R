@@ -1,28 +1,21 @@
 #================================================
 # Script that selects features using LOOCV/LDA
+setwd("~/Desktop/Research/sweepAnalysis/RLibrary/")
+rm(list=ls())
 require("MASS");
 require("caret");
-source("../functions/getSweepDataFlex.R");
+require("hash");
+source("functions/getSweepDataFlex.R");
 
 #================================================
 # Read and acquire data
 cat("Reading data...\n");
-# 13/14 = Sr/Si, 20=phase
+# 13/14 = Sr/Si ; 19/20 = Signal/Phase
 CVI_NT_Data <- getSweepDataFlex("/Users/Nathan/Desktop/Research/CVIdata/CVI_NT_20150407_1127/Exp_TEXT_PD1010_5_Cz/RLS_c001.txt", chanToKeep = c(), binToKeep = c(), colsToKeep <- c(3, 4, 9, 11, 13, 14));
 CVI_Data <- getSweepDataFlex("/Users/Nathan/Desktop/Research/CVIdata/CVI3top34_20160224_1020/Exp_TEXT_PD1010_5_Cz/RLS_c001.txt", chanToKeep = c(), binToKeep = c(), colsToKeep <- c(3, 4, 9, 11, 13, 14));
 
 CVI_NT_Data = CVI_NT_Data$selectedData;
 CVI_Data = CVI_Data$selectedData;
-
-# channel = "Oz-Cz";
-# CVI_NT_Data = CVI_NT_Data[CVI_NT_Data$iCh == channel,];
-# CVI_Data = CVI_Data[CVI_Data$iCh == channel,];
-# CVI_NT_Data = CVI_NT_Data[CVI_NT_Data$iBin == 10,];
-# CVI_Data = CVI_Data[CVI_Data$iBin == 10,];
-
-# freqs = c("3F1", "4F1");
-# CVI_NT_Data = CVI_NT_Data[!(CVI_NT_Data$Harm %in% freqs),];
-# CVI_Data = CVI_Data[!(CVI_Data$Harm %in% freqs),];
 
 # Only want iTrial > 0
 CVI_NT_Data = CVI_NT_Data[CVI_NT_Data$iTrial > 0,];
@@ -96,13 +89,94 @@ allClassLabels.binary <- ifelse(allClassLabels=="CVI", 1, 0);
 stopifnot(length(allClassLabels) == dim(totalDataSet)[1]);
 
 #================================================
-# Using LOO-CV
+# Using LOO for feature selection
+totalDataSet.lda <- lda(totalDataSet, allClassLabels);
+percentile = 0.5; # Top 25% of LD coefficients
+featImpCount = hash()
 for (i in 1:dim(totalDataSet)[1])
 {
-	
+	trainSet <- totalDataSet[!(1:nrow(totalDataSet) %in% i),];
+	trainSetLabels <- allClassLabels[!(1:length(allClassLabels) %in% i)];
+	trainSet.lda <- lda(trainSet, trainSetLabels);
+	featNames = rownames(trainSet.lda$scaling);
+	stopifnot(featNames == colnames(totalDataSet));
+	contribution = hash(); # From paper
+	for (j in 1:dim(trainSet.lda$scaling)[2])
+	{
+		stopifnot(length(featNames) == length(trainSet.lda$scaling[,j]));
+		for (k in 1:length(trainSet.lda$scaling[,j]))
+		{
+			feat = featNames[k];
+			currentWeight = abs(trainSet.lda$scaling[k,j]);
+			if (is.null(contribution[[feat]]))
+			{
+				contribution[[feat]] = currentWeight;
+			}
+			else
+			{
+				contribution[[feat]] = contribution[[feat]] + currentWeight;
+			}
+		}
+	}
+	# Process contribution for current data set in LOO loop, take top 10%
+	range = max(values(contribution)) - min(values(contribution));
+	minContr = max(values(contribution)) - (percentile * range);
+	for (j in 1:length(featNames))
+	{
+		feat = featNames[j];
+		if (contribution[[feat]] > minContr)
+		{
+			if (is.null(featImpCount[[feat]]))
+			{
+				featImpCount[[feat]] = 1;
+			}
+			else
+			{
+				featImpCount[[feat]] = featImpCount[[feat]] + 1;
+			}
+		}
+	}
 }
 
+featNames = colnames(totalDataSet);
+impFeatIdx = c();
+for (i in 1:length(featNames))
+{
+	feat = featNames[i];
+	currFeatCount = featImpCount[[feat]];
+	if (!is.null(currFeatCount))
+	{
+		cat(feat, ":", currFeatCount, '\n');
+		impFeatIdx = c(impFeatIdx, i);
+	}
+}
 
+#================================================
+# Get new dataset
+dataSet.postFeatSelection = totalDataSet[,impFeatIdx];
 
+#================================================
+# PCA
+dataSet.postFeatSelection.pca = prcomp(dataSet.postFeatSelection)
+dev.new();
+plot(dataSet.postFeatSelection.pca, type='l');
+
+dataSet.postFeatSelection.pca.component = dataSet.postFeatSelection.pca$x[,1:4];
+
+#================================================
+# LDA + CV
+dataSet.postFeatSelection.lda <- lda(dataSet.postFeatSelection.pca.component, allClassLabels, CV=TRUE)
+# dataSet.postFeatSelection.lda <- lda(dataSet.postFeatSelection.pca.component, allClassLabels, CV=TRUE)
+predictTab <- table(dataSet.postFeatSelection.lda$class, allClassLabels);
+# predictTab <- table(test.predict$class, testSetLabels);
+for (i in 1:dim(predictTab)[1])
+{
+	currGroup = colnames(predictTab)[i];
+	total <- sum(predictTab[i,]);
+	correct <- predictTab[i,i];
+	percentCorrect = correct/total;
+	cat(paste(currGroup, ":", percentCorrect));
+	cat("\n");
+}
 
 
