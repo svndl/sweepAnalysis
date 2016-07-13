@@ -2,8 +2,7 @@
 # Script that selects important features
 require("MASS");
 require("caret");
-require("xgboost");
-source("../functions/getSweepDataFlex.R");
+source("functions/getSweepDataFlex.R");
 
 #================================================
 # Read and acquire data
@@ -104,7 +103,7 @@ allData.corr <- cor(totalDataSet, use="na.or.complete", method="pearson")
 colHdrs <- colnames(totalDataSet);
 
 # Set these:
-corrThresh = 0.7;
+corrThresh = 0.85;
 removeCorrelatedFeats = 1; # If we want to remove correlated features instead of replacing them
 
 numPairs = 0;
@@ -145,7 +144,6 @@ for (i in 1:(dim(allData.corr)[1]-1))
 		}
 		else
 		{
-			stopifnot(removeCorrelatedFeats == 0);
 			totalDataSet.featEng = cbind(totalDataSet.featEng, totalDataSet[[colHdrs[i]]]);
 			numCols = ncol(totalDataSet.featEng);
 			colnames(totalDataSet.featEng)[-(1:(numCols-1))] = colHdrs[i];
@@ -186,17 +184,6 @@ cat("Number of new features:", numNewFeats, '\n');
 cat("Number of old features:", numOldFeats, '\n');
 
 #================================================
-# PCA
-if (removeCorrelatedFeats == 1)
-	totalDataSet.rmDependentFeats.pca <- prcomp(totalDataSet.rmDependentFeats, scale = TRUE);
-
-dev.new()
-plot(totalDataSet.rmDependentFeats.pca, type='l');
-
-#================================================
-
-
-#================================================
 # Split data into training and test set
 cat("Partitioning dataset...\n");
 trainIndex <- createDataPartition(allClassLabels, p=0.75, list=FALSE, times=1);
@@ -206,8 +193,20 @@ trainSetLabels <- allClassLabels[trainIndex];
 testSetLabels <- allClassLabels[!(1:nrow(totalDataSet) %in% trainIndex)];
 
 #================================================
+# PCA
+if (removeCorrelatedFeats == 1)
+{
+	totalDataSet.rmDependentFeats.pca <- prcomp(totalDataSet.rmDependentFeats, scale = TRUE);
+}
+
+dev.new()
+plot(totalDataSet.rmDependentFeats.pca, type='l');
+totalDataSet.rmDependentFeats.pca.component = totalDataSet.rmDependentFeats.pca$x[,1:4];
+
+#================================================
 # train.lda <- lda(totalDataSet.rmDependentFeats, allClassLabels, CV=TRUE)
-train.lda <- lda(totalDataSet, allClassLabels, CV=TRUE)
+# train.lda <- lda(totalDataSet, allClassLabels, CV=TRUE)
+train.lda <- lda(totalDataSet.rmDependentFeats.pca.component, allClassLabels, CV=TRUE)
 predictTab <- table(train.lda$class, allClassLabels);
 # predictTab <- table(test.predict$class, testSetLabels);
 for (i in 1:dim(predictTab)[1])
