@@ -26,8 +26,9 @@ disp(currPdData(1,1).freqsAnalyzed);
 channelNames = keys(newmap);
 valuesInChanMap = cell2mat(values(newmap));
 channelIdxToPlot = 1:length(valuesInChanMap);
-conditionsToPlot = [1];
-freqsToPlot = [1,2];
+% channelIdxToPlot = 1:1;
+conditionsToPlot = [5]; % One condition at a time
+freqsToPlot = [3,4];
 
 % Do the plotting
 totalNumPlots = length(conditionsToPlot)*length(freqsToPlot)*length(channelIdxToPlot);
@@ -42,7 +43,10 @@ for i = 1:length(freqsToPlot)
     fprintf('Plotting channel: %d\n', channelIdxToPlot(i));
     for j = 1:length(conditionsToPlot)
         for k = 1:length(channelIdxToPlot)
-            idxInput = [k,j,1,i];
+            cond = conditionsToPlot(j);
+            chan = channelIdxToPlot(k);
+            freq = freqsToPlot(i);
+            idxInput = [chan,cond,1,freq];
             subplot(dimY,dimX,m)
             plotGroupComparison({dataDir1, dataDir2}, groupNames, [], ...
                                 condDesc, 0, idxInput, dataType, newmap, 0);
