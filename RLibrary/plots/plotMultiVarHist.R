@@ -2,6 +2,7 @@ plotMultiVarHist <- function(data, questionPair)
 {
 	library(RColorBrewer)
 	library(MASS)
+	library(ggplot2)
 	source("plotSingleHist.R");
 	
 	rf <- colorRampPalette(rev(brewer.pal(11,'Spectral')))

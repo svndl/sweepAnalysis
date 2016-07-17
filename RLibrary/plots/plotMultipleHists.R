@@ -4,6 +4,8 @@ plotMultipleHists <- function(data, questions, interval)#, start)
 	# questions : Questions to plot
 	# interval	: Split questions into smaller intervals per figure
 	# start     : Starting question
+	library(ggplot2);
+	require(ggplot2);
 	
 	# Get question only data
 	qData <- data$qData;
