@@ -1,6 +1,14 @@
-#================================================
-# Script that selects features using LOOCV/LDA
+#=============================================================================================
+# This script works with CVI data. It first combines the hierarchical features in the data
+# to create a data set with the number of rows equal to the number of subjects. By changing
+# the value of "runSection" in line 107 and 119, you can choose to run the data analysis
+# using recursive feature elimination to obtain important features or to run the data analysis
+# using k-fold cross validation using random forests.
+#=============================================================================================
+
+# Change this as desired
 setwd("~/Desktop/Research/sweepAnalysis/RLibrary/")
+
 rm(list=ls());
 require("MASS");
 
@@ -13,6 +21,7 @@ source("functions/getSweepDataFlex.R");
 
 #================================================
 # Read and acquire data
+# Change the data directories to the location of the data
 cat("Reading data...\n");
 # 13/14 = Sr/Si, 20=phase
 CVI_NT_Data <- getSweepDataFlex("/Users/Nathan/Desktop/Research/CVIdata/CVI_NT_20150407_1127/Exp_TEXT_PD1010_5_Cz/RLS_c001.txt", chanToKeep = c(), binToKeep = c(), colsToKeep <- c(3, 4, 9, 11, 13, 14));
