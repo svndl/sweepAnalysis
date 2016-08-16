@@ -1,4 +1,4 @@
-function [ tThr, tSlp, tLSB, tRSB, tYFit, tYFitAllPos, tXX] = powerDivaScoring(sweepMatSubjects, binLevels, bounds)
+function [ tThr, tSlp, tLSB, tRSB, tYFit, tYFitAllPos, tXX, pValue] = powerDivaScoring(sweepMatSubjects, binLevels, bounds)
 %
 % [ tThr, tSlp, tLSB, tRSB, tYFit, tYFitAllPos, tXX] = powerDivaScoring(sweepMatSubjects, binLevels, [bounds])
 %
@@ -20,13 +20,13 @@ function [ tThr, tSlp, tLSB, tRSB, tYFit, tYFitAllPos, tXX] = powerDivaScoring(s
 % of sweepMatSubjects and coorespondingly along binLevels. If this is not
 % the case, you should reverse the ordering and then mirror the result. A
 % future version of the code should handle this automatically.
-
+tSweepMat = SweepMat( sweepMatSubjects );
 if nargin<3
-    [ tThr, tSlp, xRange ] = HybridNewOldScore( SweepMat( sweepMatSubjects ) );
+    [ tThr, tSlp, xRange ] = HybridNewOldScore(tSweepMat);
 else
-    [ tThr, tSlp, xRange ] = HybridNewOldScore( SweepMat( sweepMatSubjects ), bounds );
+    [ tThr, tSlp, xRange ] = HybridNewOldScore(tSweepMat, bounds );
 end
-
+pValue = tSweepMat(:, 5);
 
 tLSB = xRange( 1 ); 
 tRSB = xRange( 2 );
