@@ -1,4 +1,4 @@
-function [ tThr, tThrStdErr, tSlp, tSlpStdErr, tLSB, tRSB, tYFit, tYFitAllPos, tXX] = getThreshScoringOutput(sweepMatSubjects, binLevels, bounds)
+function [ tThr, tThrStdErr, tSlp, tSlpStdErr, tLSB, tRSB, tYFit, tYFitAllPos, tXX, pVal] = getThreshScoringOutput(sweepMatSubjects, binLevels, bounds)
 % [ tThr, tThrCI, tSlp, tSlpCI, tLSB, tRSB, tYFit, tYFitAllPos, tXX] = getThreshScoringOutput(sweepMatSubjects, binLevels, [bounds])
 %
 % Performs powerDivaScoring & jack-knifes the error estimates for the two
@@ -16,9 +16,9 @@ function [ tThr, tThrStdErr, tSlp, tSlpStdErr, tLSB, tRSB, tYFit, tYFitAllPos, t
 
 % first apply routine to full dataset
 if nargin<3
-    [tThr, tSlp, tLSB, tRSB, tYFit, tYFitAllPos, tXX] = powerDivaScoring(sweepMatSubjects, binLevels);
+    [tThr, tSlp, tLSB, tRSB, tYFit, tYFitAllPos, tXX, pVal] = powerDivaScoring(sweepMatSubjects, binLevels);
 else
-    [tThr, tSlp, tLSB, tRSB, tYFit, tYFitAllPos, tXX] = powerDivaScoring(sweepMatSubjects, binLevels, bounds);
+    [tThr, tSlp, tLSB, tRSB, tYFit, tYFitAllPos, tXX, pVal] = powerDivaScoring(sweepMatSubjects, binLevels, bounds);
 end
 bounds = [tLSB,tRSB];
 
