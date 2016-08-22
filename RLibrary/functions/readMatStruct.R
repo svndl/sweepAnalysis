@@ -1,107 +1,115 @@
-# This function is used to convert a Matlab data structure to an R data structure.
-# See Peter Kohler for information regarding the way the Matlab data is structured.
+# This function is used to convert a Matlab data structure into an R data structure.
+# See Peter Kohler for information regarding the structure of the MATLAB data.
+#
+# The output data has a tree-like structure as follows:
+# - Group Number (Only 2 in total)
+#   - Condition Number
+#     - Data Type (only going to use rcReal and rcImag for the time being
+#       since there are less components -- smaller runtime. See line 38.)
+#       - Subject Number
+#         - Harmonics
+#           - Trial Number
+#             - Component Number
+#               - Bin Number
+#
+# Sample usage of the function:
+#   rFormatData <- readMatStruct("...\PATH\TO\MATLAB\STRUCTURE", 0)
 
-readMatStruct <- function(matData)
-{	
-	# We need numBins, numComponents, numTrials, numHarmonics as arguments because it
-	# is not possible to get these numbers from matData alone (Matlab compatibility issue)
+readMatStruct <- function(matData, debugMode)
+{
+	# debugMode is 1 or 0 depending on whether or not user wants print statements
+	# indicating progress of data processing. Default is 0.
+	
+	if (missing(debugMode))	{
+		debugMode = 0;
+	}
 	
 	require("R.matlab")
-	cat("Reading data...\n");
+	cat("R.matlab is reading data...\n");
 	data <- readMat(matData);
+	cat("Processing data...\n");
 	
-	# Data for each condition
-	numConditions = length(data$subFullASD);
-	stopifnot(numConditions == length(data$subFullTYP));
-	cat('Number of conditions: ', numConditions, '\n')
+	# Add entries for each group
+	numGroups = length(data);
+	allData = data.frame(matrix(ncol=numGroups));
+	allDataSubjectInfo = data.frame(matrix(ncol=numGroups));
 	
-	dataTypes = c('rcReal', 'rcImag', 'sensorReal', 'sensorImag');
-	dataTypes = c('rcReal', 'rcImag');
+	# Not using sensorReal/sensorImag due to runtime (too much data from 128 components)
+	dataTypes = c("rcReal", "rcImag");
 	
-	allData = data.frame(matrix(ncol = 2));
-	colnames(allData) = c("ASD", "TYP");
-	
-	# Add entries for each condition in each subject group
-	allData[[1]] = data.frame(matrix(ncol=numConditions));
-	allData[[2]] = data.frame(matrix(ncol=numConditions));
-	for (cond in 1:numConditions)
+	for (i in 1:numGroups)
 	{
-		conditionName = paste('Condition', cond, sep="-");
-		cat(conditionName, "\n");
+		if (debugMode) {
+			cat("Processing Group:", i, '\n');
+		}
 		
-		# Index of ASD in data is 1. I don't use actual name for generality purposes.
-		dataGroup1Cond <- as.vector(data[[1]][[cond]]);
-		numDataTypes = length(dataGroup1Cond);
-		# stopifnot(numDataTypes == length(dataTypes));
-		colnames(allData[[1]])[cond] = conditionName;
+		# Add entries for each condition in each group
+		numConditions = length(data[[i]]);
+		allData[[i]] = data.frame(matrix(ncol=numConditions));
+		allDataSubjectInfo[[i]] = data.frame(matrix(ncol=numConditions));
 		
-		# Index of TYP in data is 2. I don't use actual name for generality purposes.
-		dataGroup2Cond <- as.vector(data[[2]][[cond]]);
-		numDataTypes = length(dataGroup2Cond);
-		# stopifnot(numDataTypes == length(dataTypes));
-		colnames(allData[[2]])[cond] = conditionName;
+		# Fill up data for each condition in each group
+		out = processGroup(data, i, numConditions, length(dataTypes), debugMode);
+		allData[[i]] = out$conditionData
+		allDataSubjectInfo[[i]] = out$conditionDataInfo
+	}
+	
+	cat("Done processing data.\n");
+	data <- list("allData" = allData, "subjectData" = allDataSubjectInfo);
+	return(data);
+}
+
+processGroup <- function(data, groupNumber, numConditions, numDataTypes, debugMode)
+{
+	# groupNumber: needed so that we know which data to use in this function
+	# data: output from R.matlab function readMat()
+	# numConditions: number of conditions in data
+	# numDataTypes: number of data types in data
+	# debugMode: whether or not user wants print statements indicating progress
+	
+	conditionData <- data.frame(matrix(ncol=numConditions));
+	conditionDataInfo <- data.frame(matrix(ncol=numConditions));
+	for (i in 1:numConditions)
+	{
+		if (debugMode) {
+			cat("Processing Group:", groupNumber, ", Condition", i, '\n');
+		}
+		dataGroupCond <- as.vector(data[[groupNumber]][[i]]);
+	
+		conditionName = paste('Condition', i, sep="_");
+		colnames(conditionData)[i] = conditionName;
+		colnames(conditionDataInfo)[i] = conditionName;
 		
-		# Initialize data frames for each condition
-		allData[[1]][[conditionName]] = data.frame(matrix(ncol=length(dataTypes)));
-		allData[[2]][[conditionName]] = data.frame(matrix(ncol=length(dataTypes)));
-		for (i in 1:length(dataTypes))
+		conditionData[[i]] = data.frame(matrix(ncol=numDataTypes));
+		conditionDataInfo[[i]] = data.frame(matrix(ncol=numDataTypes));
+		for (j in 1:numDataTypes)
 		{
-			dataType = dataTypes[i];
-			cat(dataType, '\n');
-			
-			# Data - ASD
-			dataGroup1Type = dataGroup1Cond[[i]];
-			colnames(allData[[1]][[conditionName]])[i] = dataType;
-			
-			# Data - Typical
-			dataGroup2Type = dataGroup2Cond[[i]];
-			colnames(allData[[2]][[conditionName]])[i] = dataType;
-
-			numSubjectsGroup1 = length(dataGroup1Type);
-			numSubjectsGroup2 = length(dataGroup2Type);
-			
-			# Initialize data frames for each subject
-			allData[[1]][[conditionName]][[i]] = data.frame(matrix(ncol=numSubjectsGroup1));
-			allData[[2]][[conditionName]][[i]] = data.frame(matrix(ncol=numSubjectsGroup2));
-			for (j in 1:numSubjectsGroup1)
+			dataGroupType = dataGroupCond[[j]]
+			numSubjects = length(dataGroupType);
+			conditionData[[i]][[j]] = data.frame(matrix(ncol=numSubjects));
+			conditionDataInfo[[i]][[j]] = data.frame(matrix(ncol=numDataTypes));
+			for (k in 1:numSubjects)
 			{
-				# Indexed as an array of length 1x5000 (10x5x10x10)
-				# Bins x Components x Trials x Harmonics
-
-				cat("Group 1: Subject ", j, "\n");
-
-				# [[1]] at the end is a weird compatibility issue for Matlab
-				dataGroup1TypeSubj = dataGroup1Type[[j]][[1]];
+				colnames(conditionData[[i]][[j]])[k] = "subject";
+				dataGroupTypeSubj = dataGroupType[[k]][[1]];
+				subjectDataDimensions = dim(dataGroupTypeSubj);
+				subjectData <- fillUpDataTree(dataGroupTypeSubj, subjectDataDimensions);
 				
-				cat("Length: ", length(dataGroup1TypeSubj), "\n");
-				
-				subjectDataDimensions = dim(dataGroup1TypeSubj);
-				subjectData <- fillUpDataTree(dataGroup1TypeSubj, subjectDataDimensions);
-				allData[[1]][[conditionName]][[i]][[j]] = subjectData;
-			}
-			for (j in 1:numSubjectsGroup2)
-			{
-				# Indexed as an array of length 1x5000 (10x5x10x10)
-				# Bins x Components x Trials x Harmonics
-
-				cat("Group 2: Subject ", j, "\n");
-				
-				# [[1]] at the end is a weird compatibility issue for Matlab
-				dataGroup2TypeSubj = dataGroup2Type[[j]][[1]];
-				
-				cat("Length: ", length(dataGroup2TypeSubj), "\n");
-				
-				subjectDataDimensions = dim(dataGroup2TypeSubj);
-				subjectData <- fillUpDataTree(dataGroup2TypeSubj, subjectDataDimensions);
-				allData[[2]][[conditionName]][[i]][[j]] = subjectData;
+				# Each subject will have the data and information about the data including:
+				# number of harmonics, trials, components, bins
+				conditionData[[i]][[j]][[k]] = subjectData$data;
+				conditionDataInfo[[i]][[j]][[k]] = subjectData$dataInfo;
 			}
 		}
 	}
-	return(allData);
+	data <- list("conditionData" = conditionData, "conditionDataInfo" = conditionDataInfo)
+	return(data)
 }
 
 fillUpDataTree <- function(subjectData, subjectDataDimensions)
 {
+	# Naming the columns helps with building the data matrix.
+	
 	numBins = subjectDataDimensions[1];
 	numComponents = subjectDataDimensions[2];
 	numTrials = subjectDataDimensions[3];				
@@ -111,20 +119,34 @@ fillUpDataTree <- function(subjectData, subjectDataDimensions)
 	subjectDataTree <- data.frame(matrix(ncol = numHarmonics));
 	for (k in 1:numHarmonics)
 	{
+		colnames(subjectDataTree)[k] = "harmonic";
 		subjectDataTree[[k]] <- data.frame(matrix(ncol = numTrials));
 		for (m in 1:numTrials)
 		{
+			colnames(subjectDataTree[[k]])[m] = "trial";
 			subjectDataTree[[k]][[m]] <- data.frame(matrix(ncol = numComponents));
 			for (n in 1:numComponents)
 			{
+				colnames(subjectDataTree[[k]][[m]])[n] = "component";
 				subjectDataTree[[k]][[m]][[n]] <- data.frame(matrix(ncol = numBins));
 				for (z in 1:numBins)
 				{
+					colnames(subjectDataTree[[k]][[m]][[n]])[z] = "bin";
 					x = (z-1) + (n-1) * numBins + (m-1) * numComponents * numBins + (k-1) * numTrials * numComponents * numBins + 1;
 					subjectDataTree[[k]][[m]][[n]][[z]] = subjectData[[x]];
 				}
 			}
 		}
 	}
-	return(subjectDataTree);
+	
+	infoMatrix = data.frame(matrix(ncol=4));
+	colnames(infoMatrix) = c("numBins", "numComponents", "numTrials", "numHarmonics");
+	
+	infoMatrix$numBins = numBins;
+	infoMatrix$numComponents = numComponents;
+	infoMatrix$numTrials = numTrials;
+	infoMatrix$numHarmonics = numHarmonics;
+	
+	subjectData <- list("data" = subjectDataTree, "dataInfo" = infoMatrix);
+	return(subjectData);
 }
