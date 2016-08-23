@@ -24,6 +24,7 @@ buildDataMatrix <- function(data, condition, dataType)
 	
 	# Iterate through each group
 	cat("Getting data...\n");
+	numOmit = 0;
 	for (i in 1:length(data$allData))
 	{
 		# We are only working with one condition and one data type
@@ -32,25 +33,23 @@ buildDataMatrix <- function(data, condition, dataType)
 		# Iterate through each subject, given a condition and a data type
 		for (j in 1:numSubjects)
 		{
+			subjectName = paste("Group", i, "Subject", j, sep="_");
 			subjectData = data$allData[[i]][[condition]][[dataType]][[j]];
 			
 			listOfValues = c();
 			listOfValues = dfsSubjectDataTree(subjectData, listOfValues);
 			
-			# If a subject has less features, then fill up the missing features with NAs.
+			# If a subject has less features, then omit subject.
 			if (length(listOfValues) != numFeatures)
 			{
 				stopifnot(length(listOfValues) < numFeatures);
 				numMissing = numFeatures - length(listOfValues);
-				cat("Warning: Group", i, "Subject", j, "has", numMissing, "missing features.");
-				
-				listOfValues = addMissingValues(listOfValues, numMissing);
-				stopifnot(length(listOfValues) == numFeatures);
-				
-				selectedData = rbind(selectedData, listOfValues);
+				cat("**Warning: Group", i, "Subject", j, "has", numMissing, "missing features. Omitting subject.\n");
+				numOmit = numOmit + 1;
 			}
 			else {
 				selectedData = rbind(selectedData, listOfValues);
+				rownames(selectedData)[(i-1)*numSubjects+j - numOmit] = subjectName;
 			}
 			cat("Subject", j, length(listOfValues), '\n');
 		}
@@ -59,13 +58,6 @@ buildDataMatrix <- function(data, condition, dataType)
 	stopifnot(length(selectedData) == length(listOfFeatures));
 	colnames(selectedData) = listOfFeatures;
 	return(selectedData);
-}
-
-addMissingValues <- function(listOfValues, numToAdd)
-{
-	missingValues = rep(NA, numToAdd);
-	listOfValues = c(listOfValues, missingValues);
-	return(listOfValues);
 }
 
 getMaxNumberOfFeatures <- function(data, condition, dataType)
